@@ -1,0 +1,6 @@
+*.xlsx
+a.txt
+test.ipynb
+DataSets/
+payment_data.csv
+names.csv
