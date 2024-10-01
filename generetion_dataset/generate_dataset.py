@@ -276,7 +276,7 @@ def generate_analyzes(dict, n):
 
 def generate_dataset(amount, bank_weights=None, payment_system_weights=None):
     # Code 
-    df = pd.read_csv('csv_files/doctors_and_symptoms.csv', delimiter=';')
+    df = pd.read_csv('generetion_dataset/csv_files/doctors_and_symptoms.csv', delimiter=';')
     docs = df['docs'].tolist()
     symps = df['symps'].tolist()
 
@@ -303,7 +303,7 @@ def generate_dataset(amount, bank_weights=None, payment_system_weights=None):
     list_of_datetime_first_meet = list()
     list_of_datetime_second_meet = list()
     
-    df = pd.read_csv('csv_files/analyzes_and_cost.csv', delimiter=',')
+    df = pd.read_csv('generetion_dataset/csv_files/analyzes_and_cost.csv', delimiter=',')
     analyzes = df['Анализы'].tolist()
     cost = df['Стоимость'].tolist()
 
