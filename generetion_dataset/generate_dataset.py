@@ -45,7 +45,7 @@ def generate_combinations_of_symptoms():
 
 def generate_datetime_first_meet():
     start_date=datetime(2024, 9, 1)
-    end_date=datetime(2024, 9, 30)
+    end_date=datetime(2024, 9, 28)
     working_hours=(8, 18)
     timezone='Europe/Moscow'
     
@@ -101,7 +101,7 @@ def generate_datetime_second_meet(initial_datetime_str):
             break
 
     return new_datetime.isoformat()
-
+"""
 def generate_snils(amount):
     # Создаем снилс с помощью библиотеки mimesis
     ru_spec = RussiaSpecProvider()
@@ -114,7 +114,7 @@ def generate_snils(amount):
         
     arrayofsnils = list(arrayofsnils)
     return arrayofsnils
-        
+   """     
 def generate_passport(amount):
     # Создаем паспорт с помощью библиотеки mimesis
     ru_spec = RussiaSpecProvider()
@@ -225,6 +225,18 @@ def generate_payment_data(amount, bank_weights=None, payment_system_weights=None
     
     return payment_data
 
+def generate_snils():
+    snils_format = '{Num1}-{Num2}-{Num3} {Num4}'
+    
+    argz = {
+        'Num1': str(random.randint(0, 999)).zfill(3), 
+        'Num2': str(random.randint(0, 999)).zfill(3), 
+        'Num3': str(random.randint(0, 999)).zfill(3), 
+        'Num4': str(random.randint(0, 99)).zfill(2)    
+    }
+    
+    return snils_format.format(**argz)
+
 def format_symptoms(symptom_str):
     # Удаляем квадратные скобки и лишние пробелы, а затем разделяем по запятой
     return symptom_str.strip("[]").replace("'", "").replace('"', '').strip()
@@ -292,7 +304,7 @@ def generate_dataset(amount, bank_weights=None, payment_system_weights=None):
 
     fullnames = generate_names(amount)
     arrayofpassport = generate_passport(amount)
-    arrayofsnils = generate_snils(amount)
+    #arrayofsnils = generate_snils(amount)
 
     doctors = list(docs)
 
@@ -315,7 +327,17 @@ def generate_dataset(amount, bank_weights=None, payment_system_weights=None):
     list_of_analyzes = list(dict_of_analyzes_and_costs.keys())
     list_of_prices = list(dict_of_analyzes_and_costs.values())
     
+    used_snils = []
+    arrayofsnils = []
+    
     for i in range(amount):
+        snils = generate_snils()
+        while snils in used_snils:
+            snils = generate_snils()
+        used_snils.append(snils)
+        
+        arrayofsnils.append(snils)
+        
         list_of_doctors.append(doctors[random.randint(0, 49)])
         n = random.randint(1, 10)
         selected_symptoms = select_symptoms(dict, n, docs, list_of_doctors[i])
@@ -335,25 +357,23 @@ def generate_dataset(amount, bank_weights=None, payment_system_weights=None):
                         'Price of analyzes': list_of_prices,
                         'Card number': card_numbers
                         })
-
-
     
-    data.to_excel('./teams.xlsx')
+    data.to_csv('./teams.csv')
     
-    df = pd.read_excel('./teams.xlsx')
+    df = pd.read_csv('./teams.csv')
 
     # Функция для преобразования строки
 
 
     # Применяем функцию к столбцу 'symptoms'
     df['Symptoms'] = df['Symptoms'].apply(format_symptoms)
-    df['Snils'] = df['Snils'].apply(format_number)
+    #df['Snils'] = df['Snils'].apply(format_number)
     df['Passport'] = df['Passport'].apply(format_passport)
     
     # Удаление первого столбца (по индексу 0)
     df = df.drop(df.columns[0], axis=1)
     # Если нужно, сохранить изменения в новый Excel файл
-    df.to_excel('./teams.xlsx', index=False)
+    df.to_csv('./teams.csv', index=False)
 
 
 if __name__ == "__main__":
@@ -362,9 +382,9 @@ if __name__ == "__main__":
     payment_system_weights = list() # Вероятности для платёжных систем
     
     # Const lists for probabilities
-    bank_weights = [0.5, 0.2, 0.1, 0.1, 0.1]  
-    payment_system_weights = [0.7, 0.2, 0.1] 
-    """
+    #bank_weights = [0.5, 0.2, 0.1, 0.1, 0.1]  
+    #payment_system_weights = [0.7, 0.2, 0.1] 
+    
     print("Введите вероятности для банков соответственно: ")
     print("Сбербанк, Альфа-Банк, Газпромбанк, Т-Банк, ВТБ")
     print("чтобы в сумме получилась 1")
@@ -399,7 +419,7 @@ if __name__ == "__main__":
                 continue
         except ValueError:
                 print("Вам нужно ввести цифру.")
-    """
+   
     print("Теперь введите желаемое количество строк в датасете")
     try:
         amount = int(input())

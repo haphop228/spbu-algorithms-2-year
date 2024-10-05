@@ -4,3 +4,5 @@ test.ipynb
 DataSets/
 payment_data.csv
 names.csv
+anonymous_dataset.csv
+teams*.csv
