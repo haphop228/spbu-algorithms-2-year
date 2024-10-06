@@ -1,48 +1,14 @@
 from mimesis.builtins import RussiaSpecProvider
 from faker import Faker
 import pandas as pd
-import numpy as np
 import random
 from datetime import datetime, timedelta, time
 import pytz
 
-# Функции, которые помогут изменить настройки датасета
 
-def get_symptoms():
-    df = pd.read_csv('DataSets\Symptom-severity (1).csv')
-    symptoms = df['Симптомы'].tolist()
-    return symptoms
-    
-def get_analyzes():
-    df = pd.read_csv('DataSets/analyzes.csv')
-    analyzes = df['Анализы'].tolist()
-    return analyzes
+# Functions that are being used in creating dataset
 
-def generate_combinations_of_analyzes():
-    combinations = []
-    for i in range(250):
-        analyzes_list = get_analyzes()
-        num_analyzes = random.randint(1, 5)
-        combination = random.sample(analyzes_list, num_analyzes) 
-        combinations.append(combination)
-    
-    combinations_df = pd.DataFrame({'Анализы': ['; '.join(combo) for combo in combinations]})
-    combinations_df.to_csv('new_analyzes.csv', index=False)
-
-def generate_combinations_of_symptoms():
-    combinations = []
-    for i in range(5000):
-        symptoms_list = get_symptoms()
-        num_symptoms = random.randint(1, 10)
-        combination = random.sample(symptoms_list, num_symptoms) 
-        combinations.append(combination)
-    
-    combinations_df = pd.DataFrame({'Симптомы': ['; '.join(combo) for combo in combinations]})
-
-    combinations_df.to_csv('new_symptoms.csv', index=False)
-
-# Функции, которые используются при создания датасета
-
+# Function that generates time, when person come to doctor
 def generate_datetime_first_meet():
     start_date=datetime(2024, 9, 1)
     end_date=datetime(2024, 9, 28)
@@ -56,7 +22,7 @@ def generate_datetime_first_meet():
     start_hour, end_hour = working_hours
     random_time = time(random.randint(start_hour, end_hour - 1), random.randint(0, 59))
 
-    while random_date.weekday() >= 5:  # 5 и 6 — это суббота и воскресенье
+    while random_date.weekday() >= 5:  # 5 и 6 — it's saturday and sunday
         random_days = random.randint(0, delta_days)
         random_date = start_date + timedelta(days=random_days)
 
@@ -67,6 +33,7 @@ def generate_datetime_first_meet():
 
     return random_datetime.isoformat()
 
+# Function that generates time, when person come for analyses
 def generate_datetime_second_meet(initial_datetime_str):
     working_hours=(8, 18)
     timezone='Europe/Moscow'
@@ -101,33 +68,22 @@ def generate_datetime_second_meet(initial_datetime_str):
             break
 
     return new_datetime.isoformat()
-"""
-def generate_snils(amount):
-    # Создаем снилс с помощью библиотеки mimesis
-    ru_spec = RussiaSpecProvider()
-    snils = ru_spec.snils()
-    arrayofsnils = set()
-    
-    while len(arrayofsnils) < amount: # создание необходимого кол-ва снилсов
-        snils = ru_spec.snils()
-        arrayofsnils.add(snils)
-        
-    arrayofsnils = list(arrayofsnils)
-    return arrayofsnils
-   """     
+
+# Function that generates list of passports using mimesis
 def generate_passport(amount):
     # Создаем паспорт с помощью библиотеки mimesis
-    ru_spec = RussiaSpecProvider()
+    ru_spec = RussiaSpecProvider() 
     passport = ru_spec.series_and_number()
-    arrayofpassport = set()
+    set_of_passports = set()
     
-    while len(arrayofpassport) < amount: # создание необходимого кол-ва паспортов
+    while len(set_of_passports) < amount: # создание необходимого кол-ва паспортов
         passport = ru_spec.series_and_number()
-        arrayofpassport.add(passport)
+        set_of_passports.add(passport)
         
-    arrayofpassport = list(arrayofpassport)
-    return arrayofpassport
+    list_of_passports = list(set_of_passports)
+    return list_of_passports
 
+# Function that generates list of names using faker
 def generate_names(amount):
     # Создаем имена с помощью библиотеки mimesis
     fake = Faker("ru_RU")
@@ -145,6 +101,7 @@ def generate_names(amount):
     
     return fullnames
 
+# Function that generates one card number
 def generate_card_number(bin_code):
     unique_part = ''.join([str(random.randint(0, 9)) for _ in range(9)]) # Сгенерировать 9 случайных цифр для уникальной части номера карты
     
@@ -155,6 +112,7 @@ def generate_card_number(bin_code):
     full_card_number = int(partial_card_number + str(last_digit)) # Полный номер карты
     return full_card_number
 
+# Function that generates list of card numbers, including probabilities for banks
 def generate_payment_data(amount, bank_weights=None, payment_system_weights=None):
     
     # Определение данных по банкам и платёжным системам
@@ -194,8 +152,7 @@ def generate_payment_data(amount, bank_weights=None, payment_system_weights=None
     if payment_system_weights is None:
         payment_system_weights = [1, 1, 1]  # По умолчанию Visa, MasterCard, Mir равновероятны
 
-    
-    payment_data = []
+    card_number_list = list()
     
     for _ in range(amount):
         # Случайный выбор банка с учётом вероятностей
@@ -210,24 +167,16 @@ def generate_payment_data(amount, bank_weights=None, payment_system_weights=None
         # Генерируем номер карты
         card_number = generate_card_number(bin_code)
         
-        # Формируем запись
-        payment_data.append({
-            'Bank': bank,
-            'Payment System': payment_system,
-            'Card Number': card_number
-        })
-    
-    # Преобразуем в DataFrame
-    #df_payment = pd.DataFrame(payment_data)
+        card_number_list.append(card_number)
 
-    # Записываем в CSV файл
-    #df_payment.to_csv('payment_data.csv', index=False)
-    
-    return payment_data
+    return card_number_list
 
+# Function that generates one snils
 def generate_snils():
+    
     snils_format = '{Num1}-{Num2}-{Num3} {Num4}'
     
+    # Generate random nums for snils
     argz = {
         'Num1': str(random.randint(0, 999)).zfill(3), 
         'Num2': str(random.randint(0, 999)).zfill(3), 
@@ -236,6 +185,39 @@ def generate_snils():
     }
     
     return snils_format.format(**argz)
+
+def select_symptoms(symptom_dict, n, doctors, doctor):
+    matched_symptoms = [symptom for symptom, doctors in symptom_dict.items() if doctor in doctors]
+
+    if len(matched_symptoms) < n:
+        return matched_symptoms  # Возвращаем врача и все найденные симптомы
+    
+    selected_symptoms = random.sample(matched_symptoms, n)
+    
+    return selected_symptoms
+
+def generate_analyzes(dict, n):
+    result = {}
+    
+    while len(result) != n:
+        # Randomly pick amount of analyses from 1 to 5
+        num_tests = random.randint(1, 5)
+        
+        # Randomly pick analyses from dictionary
+        selected_tests = random.sample(list(dict.items()), num_tests)
+        
+        # Create key from chosen analyses
+        test_names = ', '.join(test for test, _ in selected_tests)
+        
+        # Calculate total cost
+        total_cost = sum(price for _, price in selected_tests)
+        
+        # Fill final dictionary
+        result[test_names] = total_cost
+        
+    return result
+
+# Functions that are used to make result file looke better
 
 def format_symptoms(symptom_str):
     # Удаляем квадратные скобки и лишние пробелы, а затем разделяем по запятой
@@ -255,36 +237,6 @@ def format_passport(number):
     else:
         return number
 
-def select_symptoms(symptom_dict, n, doctors, doctor):
-    matched_symptoms = [symptom for symptom, doctors in symptom_dict.items() if doctor in doctors]
-
-    if len(matched_symptoms) < n:
-        return matched_symptoms  # Возвращаем врача и все найденные симптомы
-    
-    selected_symptoms = random.sample(matched_symptoms, n)
-    
-    return selected_symptoms
-
-def generate_analyzes(dict, n):
-    result = {}
-    
-    while len(result) != n:
-        # Случайно выбираем количество анализов от 1 до 5
-        num_tests = random.randint(1, 5)
-        
-        # Случайно выбираем анализы из словаря
-        selected_tests = random.sample(list(dict.items()), num_tests)
-        
-        # Создаем ключ из выбранных анализов
-        test_names = ', '.join(test for test, _ in selected_tests)
-        
-        # Вычисляем общую стоимость
-        total_cost = sum(price for _, price in selected_tests)
-        
-        # Заполняем итоговый словарь
-        result[test_names] = total_cost
-        
-    return result
 
 def generate_dataset(amount, bank_weights=None, payment_system_weights=None):
     # Code 
@@ -298,13 +250,10 @@ def generate_dataset(amount, bank_weights=None, payment_system_weights=None):
 
     docs = set(doctor for docs in dict.values() for doctor in docs)
     
-    payment_data = generate_payment_data(amount, bank_weights, payment_system_weights)
-
-    card_numbers = [item['Card Number'] for item in payment_data]
-
+    card_numbers = generate_payment_data(amount, bank_weights, payment_system_weights)
+    
     fullnames = generate_names(amount)
     arrayofpassport = generate_passport(amount)
-    #arrayofsnils = generate_snils(amount)
 
     doctors = list(docs)
 
@@ -382,9 +331,9 @@ if __name__ == "__main__":
     payment_system_weights = list() # Вероятности для платёжных систем
     
     # Const lists for probabilities
-    #bank_weights = [0.5, 0.2, 0.1, 0.1, 0.1]  
-    #payment_system_weights = [0.7, 0.2, 0.1] 
-    
+    bank_weights = [0.5, 0.2, 0.1, 0.1, 0.1]  
+    payment_system_weights = [0.7, 0.2, 0.1] 
+    """
     print("Введите вероятности для банков соответственно: ")
     print("Сбербанк, Альфа-Банк, Газпромбанк, Т-Банк, ВТБ")
     print("чтобы в сумме получилась 1")
@@ -419,7 +368,7 @@ if __name__ == "__main__":
                 continue
         except ValueError:
                 print("Вам нужно ввести цифру.")
-   
+   """
     print("Теперь введите желаемое количество строк в датасете")
     try:
         amount = int(input())
