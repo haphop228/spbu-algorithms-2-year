@@ -35,58 +35,6 @@ def remove_worst_k_anonymity_rows(df, max_percent=0.05):
     
     return df_trimmed
 
-# Функция прповерки k-anonymity
-def k_anonymity_checker(df, quasi_identifiers = [
-        'Name', 'Passport', 'Snils', 'Symptoms', 'Doctor', 
-        'Date of meeting doctor', 'Analyzes', 'Date of getting analyzes',
-        'Price of analyzes', 'Card number']):
-    
-    # Шаг 1: Чтение .xlsx файла с прошлой лабораторной
-    #df = pd.read_excel('generetion_dataset/teams.xlsx')
-
-    # Шаг 3: Группировка по квази-идентификаторам и подсчет размеров групп
-    grouped = df.groupby(quasi_identifiers).size()
-
-    # Шаг 4: Нахождение минимального размера группы
-    k_anonymity = grouped.min()
-
-    print(f'k-anonymity: {k_anonymity}')
-
-def find_low_k_anonymity_rows(df, quasi_identifiers, n):
-    # Группируем данные по указанным столбцам и считаем частоты
-    group_counts = df.groupby(quasi_identifiers).size().reset_index(name='count')
-    
-    # Фильтруем группы, у которых частота меньше n (k-anonymity < n)
-    low_k_anonymity_groups = group_counts[group_counts['count'] < n]
-    
-    # Объединяем исходный DataFrame с группами, чтобы найти исходные строки
-    df_with_k_anonymity = df.merge(low_k_anonymity_groups, on=quasi_identifiers, how='inner')
-    
-    # Убираем временный столбец 'count', возвращаем строки с низким k-anonymity
-    return df_with_k_anonymity.drop(columns=['count'])
-
-def remove_low_k_anonymity_rows(df, quasi_identifiers, n, max_remove_percentage=5):
-    # Находим строки с k-anonymity меньше n
-    low_k_rows = find_low_k_anonymity_rows(df, quasi_identifiers, n)
-    #print("LOW_K_ROWS: ",low_k_rows)
-    # Вычисляем количество строк с низким k-anonymity
-    low_k_count = low_k_rows.shape[0]
-    
-    # Общее количество строк в DataFrame
-    total_rows = df.shape[0]
-    
-    # Рассчитываем процент строк с низким k-anonymity
-    low_k_percentage = (low_k_count / total_rows) * 100
-    
-    # Если процент строк меньше или равен max_remove_percentage, удаляем строки
-    if low_k_percentage <= max_remove_percentage:
-        df_cleaned = df.drop(low_k_rows.index)
-        print(f"Удалено {low_k_count} строк ({low_k_percentage:.2f}%)")
-        return df_cleaned
-    else:
-        print(f"Невозможно удалить строки: процент удаляемых данных ({low_k_percentage:.2f}%) превышает допустимый лимит {max_remove_percentage}%.")
-        return df
-
 # Функция для маскировки СНИЛСа, используем агрегацию
 def mask_snils(snils):
     return "XXX-XXX-XXX" + " XX"
@@ -101,6 +49,7 @@ def mask_card_number(card_number):
     if len(card_str) > 6:
         return card_str[:6] + 'X' * (len(card_str) - 6)
 
+# Функция для разделений по категориям цену
 def categorize_price(price):
     if price < 15000:
         return f"< 15000"
@@ -109,11 +58,7 @@ def categorize_price(price):
     else:
         return f"< 50000"
 
-# Функция для локального подавления и перемешивания паспортов
-def suppress_and_shuffle_passport(passport):
-    # Локальное подавление: оставляем только серию (первые 2 цифры)
-    return passport[:2] + ' XXXX XXXXX'  # подавляем оставшуюся часть
-
+# Словари для замены врачей, симптомов и анализов
 specialty_groups = {
     'Аллерголог': 'Терапевтические врачи',
     'Пульмонолог': 'Терапевтические врачи',
@@ -307,30 +252,7 @@ analyzes_by_complexity = {
     ]
 }
 
-def replace_with_symptom_count(symptom_str):
-    # Разделяем строку на отдельные симптомы по запятой
-    symptoms = symptom_str.split(',')
-    
-    # Считаем количество симптомов
-    symptom_count = len(symptoms)
-    if (symptom_count < 5):
-        return "1 - 4"
-    elif (symptom_count >= 4 and symptom_count < 8):
-        return "4 - 7"
-    elif (symptom_count >= 8):
-        return "8 - 10"
-    
-def replace_with_analyze_count(analyze_str):
-    # Разделяем строку на отдельные симптомы по запятой
-    analyzes = analyze_str.split(',')
-    
-    # Считаем количество симптомов
-    analyze_count = len(analyzes)
-    if (analyze_count < 4):
-        return "1 - 3"
-    elif (analyze_count > 3):
-        return "4 - 5"
-
+# Функция для разделения по полу
 def determine_gender(full_name):
     # Разделяем ФИО на части
     parts = full_name.split()
@@ -349,26 +271,12 @@ def determine_gender(full_name):
     
        # return None  # Если не удалось определить пол
 
+# Функция для маскеризации времени
 def aggregate_time(timestamp):
     #return timestamp[:7]
     return timestamp[:5] + "XX" + "-XXXXX" +":" + "XX" + "+" + "XX" + ":" + "XX"
 
-def calculate_low_k_anonymity_percentage(df, quasi_identifiers, n):
-    # Находим строки с k-anonymity меньше n
-    low_k_rows = find_low_k_anonymity_rows(df, quasi_identifiers, n)
-    
-    # Вычисляем количество строк с низким k-anonymity
-    low_k_count = low_k_rows.shape[0]
-    
-    # Общее количество строк в DataFrame
-    total_rows = df.shape[0]
-    
-    # Рассчитываем процентное соотношение
-    low_k_percentage = (low_k_count / total_rows) * 100
-    
-    return low_k_count, low_k_percentage
-
-# Шаг 2: Функция для определения степени тяжести
+# Функция для определения степени тяжести
 def get_severity(symptoms, severity_dict):
     severity_levels = {'легкие': 1, 'умеренные': 2, 'тяжелые': 3}
     max_severity = 0  # начальная степень тяжести
@@ -394,48 +302,7 @@ def determine_complexity(analyzes):
             return complexity
     return 'Быстро'
 
-def main_func(df, selected_quasi_identifiers, exit_file):
-    #df = pd.read_csv('teams.csv')
-    
-    df['Name'] = df['Name'].apply(determine_gender)
-    df['Passport'] = 'Паспорт РФ'
-    df['Snils'] = df['Snils'].apply(mask_snils)
-    df['Symptoms'] = df['Symptoms'].apply(lambda x: get_severity(x, symptoms_by_severity))
-    df['Doctor'] = df['Doctor'].map(specialty_groups)
-    df['Date of meeting doctor'] = df['Date of meeting doctor'].apply(aggregate_time)
-    df['Analyzes'] = df['Analyzes'].apply(determine_complexity)
-    df['Price of analyzes'] = df['Price of analyzes'].apply(categorize_price)
-    df['Date of getting analyzes'] = df['Date of getting analyzes'].apply(aggregate_time)
-    df['Card number'] = df['Card number'].apply(mask_card_number)
-
-
-    df = add_or_update_k_anonymity_column(df, selected_quasi_identifiers)
-    df = remove_worst_k_anonymity_rows(df, max_percent=0.05)
-    
-    df.to_csv(f'{exit_file}.csv', index=False)
-    
-    #k_anonymity_checker(df, quasi_identifiers=['Name', 'Snils', 'Passport', 'Date of meeting doctor', 'Date of getting analyzes', 'Card number'])
-    #head_df = df.head(5)
-    
-    k_anonymity_values = df['k-anonymity'].values
-    first_k_anonymity_value = k_anonymity_values[0]
-    #print("k-anonymity:",first_k_anonymity_value)
-    
-    min_k_anonymity = df['k-anonymity'].min()
-
-    # Подсчитываем количество строк с минимальным значением 'k-anonymity'
-    min_k_anonymity_count = (df['k-anonymity'] == min_k_anonymity).sum()
-    print(f"Значение k-anonymity: {min_k_anonymity}")
-    print(f"Количество строк с минимальным k-anonymity: {min_k_anonymity_count}")
-    
-    total_rows = len(df)
-
-    # Считаем процент строк с минимальным 'k-anonymity'
-    percentage_min_k_anonymity = (min_k_anonymity_count / total_rows) * 100
-    print(f"Процент строк с минимальным k-anonymity: {percentage_min_k_anonymity:.2f}%")
-    #print("Топ плохих k-anonymity: ", head_df)
-
-#Для ввода
+# Для ввода
 def select_quasi_identifiers():
     quasi_identifiers_options = ['Name', 'Passport', 'Snils', 'Date of meeting doctor', 
                                  'Analyzes', 'Date of getting analyzes', 'Price of analyzes', 
@@ -480,7 +347,47 @@ def select_quasi_identifiers():
 
         except Exception as e:
             print(f"\nПроизошла непредвиденная ошибка: {e}. Попробуйте снова.\n")
+            
+def main(df, selected_quasi_identifiers, exit_file):
+    #df = pd.read_csv('teams.csv')
+    
+    df['Name'] = df['Name'].apply(determine_gender)
+    df['Passport'] = 'Паспорт РФ'
+    df['Snils'] = df['Snils'].apply(mask_snils)
+    df['Symptoms'] = df['Symptoms'].apply(lambda x: get_severity(x, symptoms_by_severity))
+    df['Doctor'] = df['Doctor'].map(specialty_groups)
+    df['Date of meeting doctor'] = df['Date of meeting doctor'].apply(aggregate_time)
+    df['Analyzes'] = df['Analyzes'].apply(determine_complexity)
+    df['Price of analyzes'] = df['Price of analyzes'].apply(categorize_price)
+    df['Date of getting analyzes'] = df['Date of getting analyzes'].apply(aggregate_time)
+    df['Card number'] = df['Card number'].apply(mask_card_number)
 
+
+    df = add_or_update_k_anonymity_column(df, selected_quasi_identifiers)
+    df = remove_worst_k_anonymity_rows(df, max_percent=0.05)
+    
+    df.to_csv(f'{exit_file}.csv', index=False)
+    
+    #k_anonymity_checker(df, quasi_identifiers=['Name', 'Snils', 'Passport', 'Date of meeting doctor', 'Date of getting analyzes', 'Card number'])
+    #head_df = df.head(5)
+    
+    k_anonymity_values = df['k-anonymity'].values
+    first_k_anonymity_value = k_anonymity_values[0]
+    #print("k-anonymity:",first_k_anonymity_value)
+    
+    min_k_anonymity = df['k-anonymity'].min()
+
+    # Подсчитываем количество строк с минимальным значением 'k-anonymity'
+    min_k_anonymity_count = (df['k-anonymity'] == min_k_anonymity).sum()
+    print(f"Значение k-anonymity: {min_k_anonymity}")
+    print(f"Количество строк с минимальным k-anonymity: {min_k_anonymity_count}")
+    
+    total_rows = len(df)
+
+    # Считаем процент строк с минимальным 'k-anonymity'
+    percentage_min_k_anonymity = (min_k_anonymity_count / total_rows) * 100
+    print(f"Процент строк с минимальным k-anonymity: {percentage_min_k_anonymity:.2f}%")
+    #print("Топ плохих k-anonymity: ", head_df)
 
 if __name__ == "__main__":
     
@@ -489,9 +396,9 @@ if __name__ == "__main__":
     
     selected_quasi_identifiers = select_quasi_identifiers()
     print(f"Квази идентификаторы для анализа: {selected_quasi_identifiers}")
-    df = pd.read_csv('teams_500k.csv')
+    df = pd.read_csv('teams_51k.csv')
     exit_file = "anonymous_dataset"
-    main_func(df, selected_quasi_identifiers, exit_file)
+    main(df, selected_quasi_identifiers, exit_file)
     """
     file_name = input("Введите имя файла (с расширением, например, 'data.xlsx'): ")
     try:
