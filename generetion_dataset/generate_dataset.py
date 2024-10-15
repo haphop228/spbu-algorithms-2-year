@@ -5,13 +5,12 @@ import random
 from datetime import datetime, timedelta, time
 import pytz
 
-
 # Functions that are being used in creating dataset
 
 # Function that generates time, when person come to doctor
 def generate_datetime_first_meet():
-    start_date=datetime(2024, 9, 1)
-    end_date=datetime(2024, 9, 28)
+    start_date=datetime(2020, 1, 1)
+    end_date=datetime(2024, 12, 30)
     working_hours=(8, 18)
     timezone='Europe/Moscow'
     
@@ -237,7 +236,7 @@ def format_passport(number):
     else:
         return number
 
-
+# Main function that generates final file
 def generate_dataset(amount, bank_weights=None, payment_system_weights=None):
     # Code 
     df = pd.read_csv('generetion_dataset/csv_files/doctors_and_symptoms.csv', delimiter=';')
@@ -376,5 +375,7 @@ if __name__ == "__main__":
         print("Вам нужно ввести цифру.")
         
     print("Спасибо, ожидайте!")
-    generate_dataset(amount, bank_weights, payment_system_weights) # Main function for generation
+    # Main function
+    generate_dataset(amount, bank_weights, payment_system_weights) 
+    
     print("Генерация завершена!")
