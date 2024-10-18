@@ -271,11 +271,28 @@ def determine_gender(full_name):
     
        # return None  # Если не удалось определить пол
 
-# Функция для маскеризации времени
-def aggregate_time(timestamp):
-    #return timestamp[:7]
-    return timestamp[:5] + "XX" + "-XXXXX" +":" + "XX" + "+" + "XX" + ":" + "XX"
+def get_card_type(card_number):
+    card_number_str = str(card_number)  # Преобразуем номер карты в строку
+    first_digit = card_number_str[0]
+    
+    if first_digit == '4':
+        return 'Visa'
+    elif first_digit == '5':
+        return 'MasterCard'
+    elif first_digit == '2':
+        return 'Mir'
 
+def get_season(date):
+    month = date.month
+    if month in [12, 1, 2]:
+        return 'Зима'
+    elif month in [3, 4, 5]:
+        return 'Весна'
+    elif month in [6, 7, 8]:
+        return 'Лето'
+    elif month in [9, 10, 11]:
+        return 'Осень'
+    
 # Функция для определения степени тяжести
 def get_severity(symptoms, severity_dict):
     severity_levels = {'легкие': 1, 'умеренные': 2, 'тяжелые': 3}
@@ -347,7 +364,7 @@ def select_quasi_identifiers():
 
         except Exception as e:
             print(f"\nПроизошла непредвиденная ошибка: {e}. Попробуйте снова.\n")
-            
+           
 def main(df, selected_quasi_identifiers, exit_file):
     #df = pd.read_csv('teams.csv')
     
@@ -356,17 +373,22 @@ def main(df, selected_quasi_identifiers, exit_file):
     df['Snils'] = df['Snils'].apply(mask_snils)
     df['Symptoms'] = df['Symptoms'].apply(lambda x: get_severity(x, symptoms_by_severity))
     df['Doctor'] = df['Doctor'].map(specialty_groups)
-    df['Date of meeting doctor'] = df['Date of meeting doctor'].apply(aggregate_time)
+    
+    df['Date of meeting doctor'] = pd.to_datetime(df['Date of meeting doctor'], errors='coerce')
+    df['Date of meeting doctor'] = df['Date of meeting doctor'].apply(get_season)
+    
     df['Analyzes'] = df['Analyzes'].apply(determine_complexity)
     df['Price of analyzes'] = df['Price of analyzes'].apply(categorize_price)
-    df['Date of getting analyzes'] = df['Date of getting analyzes'].apply(aggregate_time)
-    df['Card number'] = df['Card number'].apply(mask_card_number)
+    
+    df['Date of getting analyzes'] = pd.to_datetime(df['Date of getting analyzes'], errors='coerce')
+    df['Date of getting analyzes'] = df['Date of getting analyzes'].apply(get_season)
+    
+    df['Card number'] = df['Card number'].apply(get_card_type)
 
 
     df = add_or_update_k_anonymity_column(df, selected_quasi_identifiers)
     df = remove_worst_k_anonymity_rows(df, max_percent=0.05)
     
-    df.to_csv(f'{exit_file}.csv', index=False)
     
     #k_anonymity_checker(df, quasi_identifiers=['Name', 'Snils', 'Passport', 'Date of meeting doctor', 'Date of getting analyzes', 'Card number'])
     #head_df = df.head(5)
@@ -388,24 +410,25 @@ def main(df, selected_quasi_identifiers, exit_file):
     percentage_min_k_anonymity = (min_k_anonymity_count / total_rows) * 100
     print(f"Процент строк с минимальным k-anonymity: {percentage_min_k_anonymity:.2f}%")
     #print("Топ плохих k-anonymity: ", head_df)
+    df = df.drop('k-anonymity', axis=1)
+    df.to_csv(f'{exit_file}.csv', index=False)
 
 if __name__ == "__main__":
     
    # Запрос имени файла у пользователя
     #exit_file = input("Введите имя выходного файла: ")
     
-    selected_quasi_identifiers = select_quasi_identifiers()
-    print(f"Квази идентификаторы для анализа: {selected_quasi_identifiers}")
-    df = pd.read_csv('teams_51k.csv')
+    #selected_quasi_identifiers = select_quasi_identifiers()
+    #print(f"Квази идентификаторы для анализа: {selected_quasi_identifiers}")
+    #df = pd.read_csv('teams_51k.csv')
     exit_file = "anonymous_dataset"
-    main(df, selected_quasi_identifiers, exit_file)
-    """
+    #main(df, selected_quasi_identifiers, exit_file)
     file_name = input("Введите имя файла (с расширением, например, 'data.xlsx'): ")
     try:
         # Загружаем файл в DataFrame
         if file_name.endswith('.xlsx'):
             df = pd.read_excel(file_name)
-        elif file_name.endswith('.csv'):
+        elif file_name.endswith('.csv'): 
             df = pd.read_csv(file_name)
         else:
             raise ValueError("Поддерживаются только файлы .xlsx и .csv")
@@ -413,7 +436,7 @@ if __name__ == "__main__":
         print("Файл успешно загружен!")
         selected_quasi_identifiers = select_quasi_identifiers()
         print(f"Квази идентификаторы для анализа: {selected_quasi_identifiers}")
-        main_func(df, selected_quasi_identifiers, exit_file)
+        main(df, selected_quasi_identifiers, exit_file)
         #print(df.head())  # Печать первых 5 строк DataFrame
 
     except FileNotFoundError:
@@ -422,4 +445,3 @@ if __name__ == "__main__":
         print(ve)
     except Exception as e:
         print("Произошла ошибка:", e)
-"""
