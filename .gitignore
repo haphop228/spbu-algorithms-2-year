@@ -6,3 +6,6 @@ payment_data.csv
 names.csv
 anonymous_dataset.csv
 teams*.csv
+config.py
+!scoring_data_v.1.10.xlsx
+__pycache__
