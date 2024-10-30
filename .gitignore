@@ -9,3 +9,4 @@ teams*.csv
 config.py
 !scoring_data_v.1.10.xlsx
 __pycache__
+mod1.py
