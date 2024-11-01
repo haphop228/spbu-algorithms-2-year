@@ -2,13 +2,14 @@ import tkinter as tk
 from tkinter import ttk
 import numpy as np
 
+
 # Параметры генетического алгоритма
 POPULATION_SIZE = 100
 GENERATIONS = 1000
 CROSSOVER_RATE = 0.7
 
 # Функция пригодности (минимизация функции Розенброка)
-def fitness_function(individual):
+def given_function(individual):
     x1, x2 = individual
     return 100 * (x2 - x1**2)**2 + (1 - x1)**2
 
@@ -36,14 +37,14 @@ def mutate(individual, mutation_rate, gene_min, gene_max):
     return individual
 
 # Генетический алгоритм
-def genetic_algorithm(population_size, generations, mutation_rate, gene_min, gene_max, elite_size):
+def genetic_algorithm_mod(population_size, generations, mutation_rate, gene_min, gene_max, elite_size):
     population = initialize_population(population_size, gene_min, gene_max)
     best_solution = None
     best_fitness = float('inf')
     generation_data = []
 
     for generation in range(generations):
-        fitness_scores = np.array([fitness_function(ind) for ind in population])
+        fitness_scores = np.array([given_function(ind) for ind in population])
         elites = select_elites(population, fitness_scores, elite_size)
 
         new_population = list(elites)
@@ -150,7 +151,7 @@ def create_gui():
     best_fitness_label = tk.Label(frame_results, text="")
     best_fitness_label.grid(row=1, column=1, sticky="w")
 
-    def calculate():
+    def calculate_mod():
         mutation_rate = float(mutation_entry.get()) / 100
         population_size = int(population_entry.get())
         gene_min = float(gene_min_entry.get())
@@ -158,7 +159,7 @@ def create_gui():
         generations = int(generations_entry.get())
         elite_size = int(elite_entry.get())
 
-        best_solution, best_fitness, generation_data = genetic_algorithm(
+        best_solution, best_fitness, generation_data = genetic_algorithm_mod(
             population_size, generations, mutation_rate, gene_min, gene_max, elite_size
         )
 
@@ -171,10 +172,35 @@ def create_gui():
         for generation, fitness, x1, x2 in generation_data:
             tree.insert("", "end", values=(generation, f"{fitness:.5f}", f"{x1:.5f}", f"{x2:.5f}"))
 
-    calculate_button = tk.Button(frame_controls, text="Рассчитать", command=calculate)
-    calculate_button.grid(row=1, column=0, columnspan=2, pady=10)
+    def calculate_no_mod():
+        mutation_rate = float(mutation_entry.get()) / 100
+        population_size = int(population_entry.get())
+        gene_min = float(gene_min_entry.get())
+        gene_max = float(gene_max_entry.get())
+        generations = int(generations_entry.get())
+        #elite_size = int(elite_entry.get())
 
+        best_solution, best_fitness, generation_data = genetic_algorithm_no_mod(
+            population_size, generations, mutation_rate, gene_min, gene_max
+        )
+
+        best_solution_label.config(text=f"x1 = {best_solution[0]:.5f}, x2 = {best_solution[1]:.5f}")
+        best_fitness_label.config(text=f"{best_fitness:.5f}")
+        
+        for i in tree.get_children():
+            tree.delete(i)
+
+        for generation, fitness, x1, x2 in generation_data:
+            tree.insert("", "end", values=(generation, f"{fitness:.5f}", f"{x1:.5f}", f"{x2:.5f}"))
+            
+    calculate_button_mod = tk.Button(frame_controls, text="Рассчитать", command=calculate_mod)
+    calculate_button_mod.grid(row=1, column=0, columnspan=2, pady=10)
+
+    #calculate_button_def = tk.Button(frame_controls, text="Рассчитать без мод", command=calculate_no_mod)
+    #calculate_button_def.grid(row=2, column=0, columnspan=2, pady=10)
+    
     root.mainloop()
 
-# Запуск GUI
-create_gui()
+if __name__ == "__main__":
+    # Запуск GUI
+    create_gui()
